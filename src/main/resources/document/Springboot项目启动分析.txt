@@ -1,0 +1,114 @@
+1、在Spring Boot默认生成的application.properties中添加debug=true, 将其设置为debug模式。
+2、现在启动应用，就会看到SpringBoot的自动测试报告。
+   分为两部分：
+        1、匹配上的(positive matches), 所有自动配置。
+        2、没有匹配上的(negative matches)所有自动配置，这部分是在应用启动的时候，需求没有满足地SpringBoot的自动配置。
+3、可以看到：
+        DispatcherServletAutoConfiguration 被自动配置好了。
+        解释：
+            1、它使用了@Configuration，表明其是一个配置类。
+            2、 通过@Order注解来声明优先级，他会优先进行配置。
+            3、 包含一些提示信息，@AutoConfigureAfter, 进一步细化配置处理的顺序。
+            4、 它还支持（在特定的条件下启用某项功能），通过使用ConditionalOnClass(DispatcherServlet.class)
+            能确保我们的类路径下包含DispatchderServlet, 这能够很好的表明SpringMvc位于类路径下，
+            当前用户希望能够将（SpringMvc启动起来）。
+
+        这些文件还包含了Spring MVC 的DispathcerSerlvet和multipart解析器的典型配置。
+        整个SpringMvc（配置被拆分）到了多个文件之中。
+
+ 这些bean（会遵循特定的规则，以此来检查是否处于激活状态）。
+     在@Conditional(DefaultDispatcherServletCondition.class)条件满足的情况下，
+     它实现了Condition接口，只有在满足(match)条件的情况下，
+     DispatcherServletConfiguration才会生效。
+     ----其实这样做的目的就是：
+            1、在确保已经对DispatcherServlet完成注册的情况下，
+            才对其做配置。从名字可以看出。
+            DispatcherServeltConfiguration是DispatcherServlet的配置类。
+      还有一点：
+             一个类的自动配置，归根结底还是要使用其（配置类）来完成。
+
+            @Bean
+    		@ConditionalOnBean(MultipartResolver.class)
+    		@ConditionalOnMissingBean(name = DispatcherServlet.MULTIPART_RESOLVER_BEAN_NAME)
+            只有在满足上述条件的情况下，
+                    multipartResolver才会处于激活状态。----这其实就是在我们（自己没有去手动注册MultipartResolver)的时候。
+
+      总结：
+            通过查看DispathcerServeltAutoConfiguration，就知道了为什么不用我们自己去配置，
+            我们就拥有了Servelt 和 Multipart 解析器。
+            SpringBoot基于常见的使用场景，帮我们进行了配置。
+
+
+除了DispatcherServletAutoConfiguration 还有 WebMvcAutoConfiguration比较重要：
+          它声明了视图解析器、地域解析器、以及静态资源的位置。
+      数图解析器的配置没有什么特殊，只不过这里使用了（配置属性）。
+      他会在用户的配置文件中找这两个变量。
+      所以----->在配置中，只需要使用两行配置就可以将试图解析器搭建起来。
+
+            其也对静态资源的位置做了规定
+
+
+      错误与转码：
+            如果我们（没有添加任何控制器），我们会看到一个‘whitelable Error page’。
+            对于错误的处理比较麻烦，为什么呢？
+                 我们没有web.xml配置文件，但是我们还希望跨服务器部署。
+
+       SpringBoot是如何帮我们处理这些事情的。
+       ErrorMvcAutoConfiguration:   可以理解为错误页面的自动化配置。
+       1、即没有错误页面被提供的时候，Spring会自动帮我们提供这个默认的的（由代码）生成的错误页面。
+
+      这段配置干了什么呢?
+            1、它定义了一个bean, 它通过特定的属性暴露了有用的错误信息。
+            这些信息包括：状态、错误码 和相关的栈跟踪信息。
+
+            2、定义了一个BasicErrorController bean, 这是一个Mvc控制器，负责展示我们看到的错误页面。
+
+            3、允许我们将spring boot的white lable  错误页面设置为无效。
+               这需要我们将配置文件中的err.whiteable.enabled 设置为false.
+
+            4、 ErrorTemplateMissingCondition, 我们还可以借助模板引擎提供错误页面。
+                ErrorTemplateMissingConditon条件会对此做检查。
+
+
+
+     HttpEncodingAutoConfiguration  负责帮我们处理转码的问题。
+             它使用了Spring提供的CharacterEncodingFilter类来实现。
+             其原理就是分别对请求和相应进行编码。
+
+
+     嵌入式Servelt容器(Tomcat)配置：
+
+
+Http端口:  使用server.port属性。
+    ---------任务： 查看这项配置是什么时候被引入的。
+
+其他配置：
+    1、我们可以通过@Bean注解，给JavaWeb添加元素。
+    2、还有其它的自动化配置：
+        1、JacksonAutoConfiguration。
+        2、HttpMessageConverterAutoConfiguration:  默认声明了HttpMessageConverter.
+
+
+    HttpMessageConverter:
+             Strategy interface that specifies a converter that can convert from and to HTTP requests and responses.
+             它是一个策略接口，它指定了一个转换器。这个转换器可以 从http的请求或相应转换信息。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
