@@ -1,0 +1,7 @@
+1、使用SpringBoot初始化一个Gradle项目。
+2、使用.ignore插件生成.gitignore文件
+3、访问IDEA的插件仓库太慢，可以点击设置让其自动搜寻代理。
+4、git commit报did not match any file known to git的错误的问题
+   原因是：
+        1、在Linux平台上，commit提交的信息采用‘’（单引号）。
+        2、在Windows平台上，commit提交的信息应该使用""(双引号）。
