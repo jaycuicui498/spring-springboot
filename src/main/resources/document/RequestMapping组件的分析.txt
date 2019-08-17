@@ -1,0 +1,18 @@
+在SpringMvc中，很多组件的设计都使用了（模板方法模式）来实现。
+    ----首先使用一个（抽象实现)采用模板模式进行（整体设计），然后在子类通过实现（模板方法）完成业务。
+    所以：
+        ！！！（重视对组件接口直接实现的抽象实现类进行分析）。
+
+1、HandlerMapping的作用是根据request找到HandlerExecutionChain(Handler和Interceptor)，获取Handler的过程----->
+   通过直接点击（接口方法的实现）来寻找。它其实是通过模板方法getHandlerInternel交给其子类去完成的。
+  它的直接子类是：
+        AbstractHandlerMapping，它继承了WebApplicationObjectSupport。
+        它继承这个类干嘛的？
+  JavaDoc：
+        Convenient superclass for application objects running in a WebApplicationContext.
+        -----它是一个便捷的超类，对于那些运行在We Ioc容器中的对象来说。
+        Provides getWebApplicationContext(), getServletContext(), and getTempDir() accessors.
+        -----它提供了可以获取IOC容器，可以获得Servelt容器，和临时目录 的访问器。
+
+   它里面有一个initServletContext(ServletContext servletContext)的抽象方法,我们需要通过Debug来看看流程是如何走到
+   这一步的：

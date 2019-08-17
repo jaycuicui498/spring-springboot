@@ -1,0 +1,336 @@
+1、Mvc架构的基本特点：
+   1、用户使用【控制器】Controller操作【模型】Model
+   2、【模型】更新相应的【视图】View
+   3、【视图】展现给【用户】
+
+2、MVC的理念就是将【视图】和【模型】解耦，模型必须是【自包含】并且与【UI】无关。
+   为什么要将【模型】和【视图】解耦，因为--
+   可以实现相同的数据跨多个视图重用，即可以以不同的方式来查看数据。
+   自包含：指的是组件重用时不需要包含其他可重用组件。
+
+
+
+
+   【控制器】会作为【用户】和数据的【中间协调者】。---统一协调者。
+    它的角色就是控制【终端用户】的可用行为，并引导他们在不同视图间跳转。
+
+3、 在SpringMvc中，(模型是由SpringMvc的Model或ModelAndView封装的简单Map.)
+    它可以来源于数据库、文件、外部服务器，这取决你如何获取数据并将其放到模型中。
+
+
+4、 SpringMvc中的控制器是通过@Controller来处理的。
+    控制器的作用是: （响应Http请求）。--带有Controller的类会被Spring检索到，并且可以处理（传入的请求）。
+    通过使用@RequestMapping注解，控制器就会根据HTTP方法和URL来处理特定的请求（路由功能）。
+    ---->不管是Restful Api 还是传统的视图展示，都是在Controller这里处理的。
+
+    控制器就可以确定在Web响应中直接写入内容，还是利用视图展示。
+
+    1、RestFul应用，会在Http响应中直接暴露模型的JSON或XML表达，需要用到@ResponseBody注解。
+    这种架构通常会与前端Js框架关联，
+    在这种场景中，Spring应用只需处理MVC中的模型层。
+
+    2、模型会传到视图中，视图由模板引擎渲染，并写入到响应中。
+
+    3、混合方式则会在某些方面采用模板引擎与应用交互，并将视图层委托给前端框架。
+
+1、 思考：Controller注解是如何其作用的？
+    回答：
+         首先这个注解@Controller是一个复合注解，它也被@Component注解，所有它可以作为Spring中的一个Bean.
+         它可以通过类路径扫描将其添加到IOC容器中。
+         this annotation serves as a specialization of @Component,
+         ---这个组件会作为一个特殊化的@Compennet.
+         allowing for implementation classes to be autodetected through classpath scanning.
+         ---可以通过类路径扫描找到它。
+         它通常和@RequestMapping注解一起使用。
+
+
+2、其实这又涉及到SpringMvc是如何实现的。
+          在JavaEE中：
+            A servlet is a small Java program that runs within a Web server.
+            ---Servlet是运行在Servlet容器中的一个小的Java程序代码。
+            Servlets receive and respond to requests from Web clients,
+            -- 从客户端接收请求，并返回响应。
+            usually across HTTP, the HyperText Transfer Protocol.
+            --  Servelt通常是使用Http进行通信的。
+
+          Servelt这个接口中定义了Servelt的生命周期方法：
+            This interface defines methods to initialize a servlet,
+            -----包括初始化Servelt的init方法。
+            to service requests,
+            ----- 请求的处理方法。
+            and to remove a servlet from the server.
+            --- Servlet的销毁方法。
+
+    它的初始化方法：
+            public void init(ServletConfig config) throws ServletException;
+            -- 其实Servelt接口中的方法都可以叫做（回调方法).
+        这个init方法是由Servlet Container容器来调用的，一个Servelt来对客户端的请求进行处理之前
+        这个init方法必须执行完毕。
+            既然是回调方法：init方法的参数就是由Servelt Container 传递过来的。
+
+        ServeltConfig  包含了Servlet容器传递给Servlet组件的一些信息。
+        eg:
+              1、这个Servlet的名字。
+              2、这个Servlet的初始化参数。
+              3、最最重要的，它会将ServeltContext对象给传过来。
+              这个对象在每个Servlet容器中是独一份的，我们的可以通过这个对象和Serelt容器进行交流。
+
+     总结：对象间交流的信息流传递：
+               1、servelt组件通过getServletConfig拿到自己的配置对象。
+               2、这个配置对象是由容器传过来的。通过这个配置对象，我们可以拿到容器环境ServeltContext.
+               3、即： 我们每个Servelt组件都可以与Servelt容器进行交互。
+
+
+     一般，我们通过继承HttpServlet来进行应用开发。
+     1、研究SpringMvc的架构设计，从Servlet的init()初始化方法，和service()方法的实现来展开。
+
+     2、init()方法的实现：
+            Initialize and publish the WebApplicationContext for this servlet.
+            // 为这个Servelt初始化并发布了一个WebApplicaetionContext.
+        如何去理解这句话呢？
+            其实就这就是从一个Servlt扩展到SpringMvc框架的关键。
+            原本的情况，我们处理客户端的请求，我们会自己定义一个Servelt去处理客户端的请求。
+            现在情况变了，我们自己不写这个Servelt了，而是为其安装了一个SpringMvc框架。
+            从大体上来看，SpringMvc框架充当的角色就是（我们自定义Servelt的角色）。
+
+            现在，我们不是将请求交给我们自定义的Servlet组件了，而是交给了SpringMvc。
+            我们可以将SpringMvc框架看作是一个(大的，功能齐全的Servelt)。
+            但是SpringMvc的运行需要一个IOC容器，所以我们就为这个处理客户端请求的大的Servlet
+            创建一个Ioc容器。而创建这个Ioc容器的时机就在Servelt的init()方法中。
+            所以说：
+                   在init()方法中：Initialize and publish the webApplicationcontext for this servlet.
+        ---------->
+            这次，这个Ioc容器就初始化了。
+
+--------这个大的，功能强大的Servlet的运行环境就创建好了。接下来，我们要使用SpringMvc(这个Servlet）来处理客户端请求。
+
+        1、 根据Service()方法的流程，我们最终走到DispatchServlet的doDispatch()方法中，可以看到他的方法参数还是
+        req和resp, 和Service方法一致。即它经过一系列的参数给我们暴露的方法，还是同样的接口。
+        看看这个方法的JavaDoc:
+                Process the actual dispatching to the handler.
+                -----我们可以看到，客户端的请求最终是来到了这个doDispatcher方法。
+                即，最终我们将客户端的请求引导到我们的SpringMvc框架中了。接下来，就看SpringMvc是如何将这个请求
+                进行处理的?  从这以后，就看SpringMvc的架构是如何设计的。
+                SpringMvc使用了前端控制器模式，同样是将这个请求分发其内部的组件。
+                ----如何理解这个分发过程？
+                    为什么要分发请求？我们分发的是什么请求？
+                回答：
+                    Http连接是建立在tcp链接上的， 当客户端和服务器建立了连接。
+                    Http连接就建立起来了。在Http1.1中，启用了keep-alive机制。
+                    即：我们可以在这条通讯链路上发送多个请求。这里，我们分发的内容
+                    就是在（这条通讯链路上）传过来的(多个http请求)。
+
+                    至于为什么要使用前端控制器模式，这就很好理解了。
+                    解
+                 我们可以从HttpServletRequest对象中(析到这次请求的URL地址) ，上面说过了
+                 在一个Http的链路上，会传送多个Http请求，这些Http请求都会被封装为req对象。
+                 如果我们就是用一个Servlet来处理与客户端的所有交互，那么我们必然需要处理多个
+                 req封装的请求，我们需要在service方法中，分多种情况去处理。
+                 其实，就(会出现if else 多重判断的场景)，所以我们需要引入前端控制器模式，对这种情况进行改善。
+
+   !!!!!这个前端控制器，就是充当一个前端路由的角色。将不同的请求分发到不同的Handler去处理。
+                 总结：
+                      其实就是上面说的，分发实际的请求到不同的Handler.
+                 -----Process the actual dispatching to the handler.
+
+                The handler will be obtained by applying the servlet's HandlerMappings in order.
+                -------这些处理器Handler可以通过顺序应用servlet的RequestMapping来获得。
+                @RequestMapping通常都是配合@Controller来使用的。
+
+                The HandlerAdapter will be obtained by querying the servlet's installed HandlerAdapters
+                --------HandlerAdapter处理器适配器可以通过查询Servlet预先安装的HandlerAdapter来获得。
+
+                to find the first that supports the handler class.
+                All HTTP methods are handled by this method.
+
+                It's up to HandlerAdapters or handlers themselves to decide which methods are acceptable
+                -------Handler或HandlerAdapter他们自己会决定他们可以处理那些方法。
+
+2、 处理的第一步：
+            Return the HandlerExecutionChain for this request.
+         // 返回这个请求的HandlerExecutionChain.（处理器执行链条）。
+            HandlerExecutionChain其实就是一个包含一系列Interceptor拦截器链的Handler。
+         ------consisting of handler object and any handler interceptors.
+            包含了一个处理器对象（Handler) 和 任意多个处理器拦截器（Handler Interceptor).
+
+         我们重点关注Handler是如何获取到的？
+            我们可以看到，我们的handler对象都是通过遍历handlerMappings，
+            然后返回一个可以处理这个request的Handler.
+                for (HandlerMapping mapping : this.handlerMappings) {
+                	HandlerExecutionChain handler = mapping.getHandler(request);
+                			if (handler != null) {
+                				return handler;
+                			}
+                }
+         这个handlerMapping是什么东西?
+               我们可以看到，它是在一个叫做：initHandlerMappings(context) 方法中被设置进来的。
+               同时，这个方法是在一个叫做onRefresh()方法中被调用的。---这个叫做刷新方法。
+
+         通过追踪调用栈，我们发现在SpringMvc这个（大Servlet初始化）的时候，
+         它不是会为这个大Servlet创建一个IOC容器嘛，
+                在将这个IOC容器建立好了以后，得需要将这个IOC容器进行初始化。
+         Initialize and publish the WebApplicationContext for this servlet.
+                可以看到这里的动作是：Initialize and publish （初始化并发布）。
+         上一次的动作是：
+                Instantiate the WebApplicationContext for this servlet。
+                为这个大的Servelt实例化一个IOC容器。
+
+         总结，为了使用Spring提供的遍历IOC和AOP，我们首先：
+                1、为这个Servlet实例化一个IOC容器，简单的理解就是为其new了一个IOC容器。
+                2、接下来，我们要对这个刚new出来的IOC容器，进行一系列的（set), 即初始化它。
+                3、将这个IOC容器设置好了以后，进行发布，则这个IOC容器就可以使用了。
+
+         注意点：
+                1、所有这一切都是在init()方法中完成的，即在这个大Servlet初始化阶段就完成了。
+            ---------即这个大的Servlet初始化好的时候，IOC容器即可以用了。
+                2、需要了解refresh和onRefresh方法的区别。
+                   refresh()方法是在实例化（或者说new)IOC容器的时候调用的，
+                观察方法：
+                    configureAndRefreshWebApplicationContext(wac);
+                    这个方法在 createWebApplicationContext 后调用：
+                即： 这个IOC被new出来以后，要进行（Configure和Refresh).
+                    这一步要干什么?
+                回答：
+                     其实这一步做的最大工作就是解耦。具体体现如下：
+                 1、  将这个大Servlet运行的环境，和这个大Servlet本身的配置都给设置到IOC容器中来。
+                      wac.setServletContext(getServletContext());
+                      wac.setServletConfig(getServletConfig());
+                      wac.setNamespace(getNamespace());
+
+                 2、  这样一来，Servelt容器的相关功能，其实就被我们的IOC容器给代理了。
+                       以前的交互是体现在:
+                           这个大的Servlet 和 我们的ServletContainer 交互。
+                       以后就转化为，
+                            Spring的组件和IOC容器交互了。
+
+                       这里的refresh()方法，进行的动作和我们不在Web环境中的刷新动作其实是一样的。
+                   其实就是处理IOC容器中加载的Bean，对Bean进行一系里的处理。-----
+
+
+                 3、   非常兴奋的发现, 原来onRefresh() 方法是在refresh()中进行的。
+                        // Initialize other special beans in specific context subclasses.
+                       会初始化一些特殊的Bean.
+
+
+总结：
+      总体说来，就是在SpringMvc这个大Servelt的初始化过程中：
+        1、首先会为其创建一个IOC容器。
+        2、对这个IOC容器进行一系列的配置，包括：
+                1、将和SprignMvc这个大的Servelt交互的Servelt容器的相关信息设置到IOC容器中。
+                2、对IOC容器中的Bean进行一系列的配置。
+        3、最后这个IOC容器就可以使用了。
+        4、至此Servlet的初始化阶就完成了。
+
+      在对容器进行配置的过程中，容器会进行刷新。 其实（刷新工作就是IOC容器配置）工作的一部分。
+
+      期间，会执行Servelt的初始化策略，这是SpringMvc框架为这个大Servlet做的一系列准备工作。
+      ---本质上就是： 预先给这个大Servlet定义一些组件供其使用。
+
+        1、 handlerMapping就是在这个时候，被提供的。我们看看HandlerMappings的本质是个什么东西？
+      回答：
+           本质上它是一个HandlerMapping的集合，这些预定义的组件通过SpringMvc的默认策略提供。
+           在spring的webMvc的jar包中，包含了一个叫做： DispatcherServlet.properties 的文件。
+       里面记录了SpringMvc为我们预设的很多组件。
+           这样一来，我们的这个大的Servlet就可以利用这些组件来完成我们对客户端的请求。
+
+我们看到，SpringMvc为我们提供的这个HandlerMapping叫做RequestMappingHandlerMapping。
+思考：
+    为什么利用这个RequestMappingHandlerMapping组件，就可以拿到（能处理我们当前请求的）Handler了呢？
+回答：
+    如果只是简单的理解，我们可以将HandlerMapping单做我们的路由信息，根据提供的路由信息当然就可以找到我们的Handler了。
+    具体我们看源码：
+        1、首先我们先看他的JavaDoc:
+            Creates RequestMappingInfo instances from type and method-level @RequestMapping annotations in @Controller classes.
+            可以看到： 他会在@Controoler注解的类中，利用类或方法上标注的@RequestMapping注解来创建RequestMappingInfo实例。
+
+        2、SpringMvc会为我们预先实例化这个组件，那我们会看看它的构造函数干了什么？
+          非常抱歉，它仅仅使用了默认的构造方法。
+           但是我们看到了它实现了： HandlerMapping 接口。
+             这个接口：
+                Define a mapping between requests and handler objects.
+             它定义了(Request)请求对象和处理器对象（Handler）之间的映射关系。
+
+     BeanNameUrlHandlerMapping and RequestMappingHandlerMapping are included in the framework.
+     The former is the default if no HandlerMapping bean is registered in the application context.
+     ------
+           SpringMvc框架默认为我们提供了两个处理（request  到   handler 的映射组件）。
+     ------BeanNameUrlHandlerMapping  只有当没有HandlerMapping 组件 没有被注册到 IOC容器中时才使用。
+     HandlerMapping implementations can support mapped interceptors but do not have to.
+     --------HandlerMapping的实现类支持（拦截器），但这不是必须的。
+     A handler will always be wrapped in a HandlerExecutionChain instance,
+     optionally accompanied by some HandlerInterceptor instances.
+     ------一个Handler实例通常被包装进一个HandlerExecutionChain实例中。
+             伴随着一些可选的HandlerInterceptor实例。-------------> 注意，这些拦截器是可选的。
+
+     The DispatcherServlet will first call each HandlerInterceptor's preHandle method in the given order,
+     finally invoking the handler itself if all preHandle methods have returned true.
+     ---------DispatcherServlet会首先调用这些Interceptor的preHandle方法。
+     ----当这些preHandle方法被处理完了以后，就会调用Handler本身。
+
+     The ability to parameterize this mapping is a powerful and unusual capability of this MVC framework.
+    -------------这种（参数化映射信息）的能力是很NB的。
+
+1、   既然HandlerMapping 是进行(request 到 Handler)的映射的处理。
+      那么自然的，我们就可以根据Request对象 找到 Handler对象。 我们来看看它是如何找的:
+      Look up a handler for the given request.( 为给定的Request寻找Handler处理器）。
+   实现过程：
+       我们Debug来看：
+           就是根据URL去找到相应的Handler, 然后看看是否有对这个路径进行拦截的拦截器。
+       将两者组装成HandlerExecutionChain并进行返回。
+
+----现在，我们接着探究，如果我们定义了相应的Handle，那么它是如何找到这个Handler的呢？
+2、 寻找这个Handler的过程：
+    通过debug的时候，会惊奇的发现： handlerMappings 这个List集合竟然包含了5个组件，
+    我们不是通过解析DispatcherServlet.propereties文件，找到两个组件嘛，其他三个组件是什么时候添加进入的。
+
+    我们发现还没有到去解析.properties这个配置文件的时候，这5个组件就被添加到这个List中了。
+    这是怎么做到的呢？
+           1、我们发现，它是在IOC容器中检索实现了HandlerMapping这个接口的组件来寻找到的。
+           但是，这5个组件是在什么时候被添加到IOC容器中的呢？
+    ---->
+           注意，SpringMvc加载组件的策略：
+                1、先去容器中加载对应的组件。
+                2、如果加载不到，就去解析配置文件，找默认配置。
+           这些HandlerMapping是保存在一个List中的，当有请求过来，会遍历这个List.
+           因为HandlerMapping就是处理从request到Handler的映射。
+           我们可以从这个List中寻找到能够处理这个request的Handler.
+
+     上面说到：
+           在容器初始化的时候，HandlerMapping这个对象其实就已经存在于IOC容器中了。
+           initHandlerMapping的作用只不过是将他们放到了集合当中。
+           这些HandlerMapping组件是何时添加到IOC容器中的呢？
+
+1、思路：
+      我们通过查看器实现类，来查看这些组件是何时被添加到容器中的。
+      为什么要这样做？因为我们知道，SpringIoc加载Bean，即将Bean添加到Ioc容器中肯定是
+      有一定规则的。所以，我们只需看实现类（具有什么样的特性才会被添加到IOC容器中）。
+
+一、SimpleUrlHandlerMapping:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
